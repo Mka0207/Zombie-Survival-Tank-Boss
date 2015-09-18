@@ -1,16 +1,7 @@
 --Zombie Survival Tank Boss Class by Mka0207 : http://steamcommunity.com/id/mka0207/
 --Tank Model by MrPutisher : http://steamcommunity.com/profiles/76561198028565839
 
-if CLIENT then
-
-	AddCSLuaFile("autorun/sh_loadclasses.lua")
-	AddCSLuaFile("zombieclasses/boss_tank.lua")
-
-end
-
 if SERVER then
-
-	include("zombieclasses/boss_tank.lua")
 	
 	resource.AddFile( "materials/models/enhanced_infected/hulk/hulk_02.vmt" )
 	resource.AddFile( "materials/models/enhanced_infected/hulk/hulk_02.vtf" )
