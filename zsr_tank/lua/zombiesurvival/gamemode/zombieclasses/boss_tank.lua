@@ -205,6 +205,7 @@ if SERVER then
 	
 	function CLASS:OnKilled(pl)
 	
+		-- CLASS.NoGib doesn't work for some reason, so we do this.
 		pl:CreateRagdoll()
 		
 	return true
@@ -215,4 +216,4 @@ end
 
 if not CLIENT then return end
 
-CLASS.Icon = "zombiesurvival/killicons/zs_tank"
+CLASS.Icon = "zombiesurvival/killicons/zs_tank_v2"
