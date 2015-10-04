@@ -105,5 +105,5 @@ if ( SERVER ) then
 	resource.AddFile( "sound/tank/voice/yell/tank_yell_07.wav" )
 	resource.AddFile( "sound/tank/voice/yell/tank_yell_08.wav" )
 	resource.AddFile( "sound/tank/voice/yell/tank_yell_09.wav" )
-	resource.AddFile( "sound/zombiesurvival/tank_theme.mp3" )
+	resource.AddFile( "sound/zombiesurvival/tank_theme_loop.wav" )
 end

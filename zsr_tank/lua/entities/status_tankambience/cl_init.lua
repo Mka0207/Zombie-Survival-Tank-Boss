@@ -5,7 +5,7 @@ ENT.RenderGroup = RENDERGROUP_NONE
 function ENT:Initialize()
 	self:DrawShadow(false)
 
-	self.AmbientSound = CreateSound(self, "zombiesurvival/tank_theme.mp3")
+	self.AmbientSound = CreateSound(self, "zombiesurvival/tank_theme_loop.wav")
 	self.AmbientSound:PlayEx(1, 100)
 end
 
