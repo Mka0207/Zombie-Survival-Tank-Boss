@@ -1,7 +1,21 @@
 --Zombie Survival Tank Boss Class by Mka0207 : http://steamcommunity.com/id/mka0207/
 --Tank Model by MrPutisher : http://steamcommunity.com/profiles/76561198028565839
 
-util.PrecacheModel("models/enhanced_infected/hulk_2.mdl")
+util.PrecacheModel("models/enhanced_infected/zombie_hulk_v2.mdl")
+
+CLASS.Name = "Tank"
+CLASS.TranslationName = "class_boss_tank"
+CLASS.Description = "description_tank"
+CLASS.Help = "controls_tank"
+
+CLASS.SWEP = "weapon_zs_tank"
+CLASS.Model = Model( "models/enhanced_infected/zombie_hulk_v2.mdl" )
+CLASS.DeathSounds = { "tank/voice/die/tank_death_0"..math.random(1, 7)..".wav" }
+CLASS.PainSounds = { "tank/voice/pain/tank_pain_0"..math.random(1, 9)..".wav" }
+
+CLASS.Wave = 0
+CLASS.Threshold = 0
+CLASS.KnockbackScale = 0
 
 CLASS.Unlocked = true
 CLASS.Hidden = true
@@ -12,31 +26,19 @@ CLASS.NoGibs = true
 CLASS.CanTaunt = false
 CLASS.CanFeignDeath = false
 
-CLASS.Name = "Tank"
-CLASS.TranslationName = "class_boss_tank"
-CLASS.Description = "description_tank"
-CLASS.Help = "controls_tank"
-
-CLASS.SWEP = "weapon_zs_tank"
-CLASS.Model = Model("models/enhanced_infected/hulk_2.mdl")
-CLASS.DeathSounds = {"tank/voice/die/tank_death_0"..math.random(1, 7)..".wav"}
-CLASS.PainSounds = {"tank/voice/pain/tank_pain_0"..math.random(1, 9)..".wav"}
-
-CLASS.Wave = 0
-CLASS.Threshold = 0
-CLASS.Health = 4500
-CLASS.Speed = 180
-CLASS.JumpPower = 250
-CLASS.Points = 50
+CLASS.Health = 4000
+CLASS.Speed = 160
+CLASS.JumpPower = 275
+CLASS.Points = 30
 CLASS.FearPerInstance = 100
 CLASS.VoicePitch = 1
 CLASS.ModelScale = 1 --Please don't set this above 1.1, it causes the mouth bone to glitch.
 
-CLASS.ViewOffset = DEFAULT_VIEW_OFFSET * 1.6
+CLASS.ViewOffset = DEFAULT_VIEW_OFFSET * 1.1
 CLASS.ViewOffsetDucked = DEFAULT_VIEW_OFFSET_DUCKED * CLASS.ModelScale
 
 CLASS.Hull = {Vector(-16, -16, 0) * CLASS.ModelScale, Vector(16, 16, 64) * CLASS.ModelScale}
-CLASS.HullDuck = {Vector(-16, -16, 0) * CLASS.ModelScale, Vector(16, 16, 32) * CLASS.ModelScale}
+CLASS.HullDuck = {Vector(-16, -16, 0) * CLASS.ModelScale, Vector(16, 16, 38) * CLASS.ModelScale}
 CLASS.Hull[1].x = -16
 CLASS.Hull[2].x = 16
 CLASS.Hull[1].y = -16
@@ -81,11 +83,13 @@ function CLASS:Move(pl, mv)
 	--I do this because the Tank's animations aren't 9 set.
 	mv:SetSideSpeed( 0 )
 	
-	--As well as stopping the Tank when it attacks, similar to L4D2.
+	--As well as stopping the Tank when it crouch attacks, similar to L4D2.
 	local wep = pl:GetActiveWeapon()
 	if wep:IsValid() and wep.IsInAttackAnim then
 		if wep:IsInAttackAnim() then
-			mv:SetForwardSpeed( 0 )
+			if pl:Crouching() then
+				mv:SetForwardSpeed( 0 )
+			end	
 		end
 	end
 end
@@ -100,7 +104,11 @@ function CLASS:CalcMainActivity(pl, velocity)
 	if wep.IsInAttackAnim then
 		if wep:IsInAttackAnim() then
 			if not pl:Crouching() then
-				pl.CalcSeqOverride = pl:LookupSequence("Attack_Moving")
+				if velocity:Length2D() > 0.5 then
+					pl.CalcSeqOverride = pl:LookupSequence("Hulk_Runmad")
+				else
+					pl.CalcSeqOverride = pl:LookupSequence("Attack_Moving")
+				end	
 			else	
 				pl.CalcSeqOverride = pl:LookupSequence("Attack_Incap")
 			end
@@ -197,9 +205,7 @@ if SERVER then
 		
 		--Neat little ambience that plays the Tank theme from L4D2.
 		pl:CreateAmbience("tankambience")
-		
-		--The model wants to randomly change skins so I set the default skin here.
-		pl:SetSkin(0)
+		pl:SetBodygroup( 1, 0 )
 		
 	end
 	
@@ -208,8 +214,7 @@ if SERVER then
 		-- CLASS.NoGib doesn't work for some reason, so we do this.
 		pl:CreateRagdoll()
 		
-	return true
-		
+		return true	
 	end
 
 end

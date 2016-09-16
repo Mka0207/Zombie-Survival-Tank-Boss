@@ -1,16 +1,13 @@
---Tank SWEP by Mka0207 : http://steamcommunity.com/id/mka0207/
---Based off the Zombie SWEP Base by JetBoom.
-
 if not gamemode.Get("zombiesurvival") then return end
 
 AddCSLuaFile()
 
 SWEP.Base = "weapon_zs_zombie"
 
-SWEP.MeleeReach = 125
-SWEP.MeleeDamage = 50
-SWEP.MeleeForceScale = 4
-SWEP.MeleeSize = 1.5
+SWEP.MeleeReach = 50
+SWEP.MeleeDamage = 40
+SWEP.MeleeForceScale = 5
+SWEP.MeleeSize = 2.8
 SWEP.MeleeDamageType = DMG_SLASH
 SWEP.Primary.Delay = 1.5
 SWEP.Primary.Automatic = false
@@ -27,7 +24,7 @@ end
 
 function SWEP:Think()
 	self:CheckMeleeAttack()
-	self:CheckMoaning()
+	--self:CheckMoaning()
 end
 
 function SWEP:ApplyMeleeDamage(ent, trace, damage)
@@ -60,6 +57,39 @@ function SWEP:SecondaryAttack()
 	self.BaseClass.SecondaryAttack(self)
 end
 
+function SWEP:StartSwinging()
+	if self.MeleeAnimationDelay then
+		self.NextAttackAnim = CurTime() + self.MeleeAnimationDelay
+	else
+		self:SendAttackAnim()
+	end
+
+	local owner = self.Owner
+	owner:DoAttackEvent()
+
+	if SERVER then
+		self:PlayAttackSound()
+	end
+	--self:StopMoaning()
+
+	if self.FrozenWhileSwinging then
+		owner:SetSpeed(1)
+	end
+
+	if self.MeleeDelay > 0 then
+		self:SetSwingEndTime(CurTime() + self.MeleeDelay)
+
+		local trace = self.Owner:MeleeTrace(self.MeleeReach, self.MeleeSize, player.GetAll())
+		if trace.HitNonWorld then
+			trace.IsPreHit = true
+			self.PreHit = trace
+		end
+
+		self.IdleAnimation = CurTime() + self:SequenceDuration()
+	else
+		self:Swung()
+	end
+end
 
 function SWEP:StopMoaning()
 	if not self:IsMoaning() then return end
@@ -68,6 +98,7 @@ function SWEP:StopMoaning()
 end
 
 function SWEP:StartMoaning()
+	--if not self.Owner.m_Boss_Moan then return end
 	if self:IsMoaning() then return end
 	self:SetMoaning(true)
 	

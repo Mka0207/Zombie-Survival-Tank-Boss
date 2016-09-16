@@ -4,8 +4,8 @@ ENT.RenderGroup = RENDERGROUP_NONE
 
 function ENT:Initialize()
 	self:DrawShadow(false)
-
-	self.AmbientSound = CreateSound(self, "zombiesurvival/tank_theme_loop.wav")
+	
+	self.AmbientSound = CreateSound(self, "zombiesurvival/tank_theme_loop.ogg")
 	self.AmbientSound:PlayEx(1, 100)
 end
 
@@ -14,15 +14,7 @@ function ENT:OnRemove()
 end
 
 function ENT:Think()
-	owner = self:GetOwner()
-	if owner:IsValid() then
-		local wep = owner:GetActiveWeapon()
-		--if wep:IsValid() and (wep.IsSwinging and wep:IsSwinging()) then
-			--self.AmbientSound:Stop()
-		--else
-			self.AmbientSound:PlayEx(1, 100)
-		--end
-	end
+
 end
 
 function ENT:Draw()
