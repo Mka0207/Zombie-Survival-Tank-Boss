@@ -1,8 +1,6 @@
 
 translate.AddLanguage("en", "English")
 
-LANGUAGE.class_boss_tank	= "The Tank"
-
-LANGUAGE.description_tank	= "The Tank is a Special Infected that is arguably the most powerful among the Infected in Left 4 Dead 2.\nAfter hours of work by Mka0207, you can now experience that power in ZS.\nEnjoy clobbering klieners, obliterating barricades and crushing anyone who opposes the undead."
-
-LANGUAGE.controls_tank		= "> PRIMARY: Blunt Force\n> PROS: Fast Running Speed, Instant Knock-down and 50 Damage per hit\n> CONS: Huge Hit-box and Cannot Move Sideways or Backwards"
+LANGUAGE.class_boss_tank							= "The Tank"
+LANGUAGE.description_boss_tank						= "A mutated variant of the common infected that can single-handedly wipe an entire survivor team.\nIts abnormal muscle growth allows it to fling props, dismantle survivors, and resist damage at a distance."
+LANGUAGE.controls_boss_tank							= "> PRIMARY: Slam\n> SECONDARY: Rock throw\n> RELOAD: Rage\n> ON RAGE: Sprint, charge knockdown, increased rock throw intensity"

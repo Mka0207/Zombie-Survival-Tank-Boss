@@ -1,50 +1,114 @@
 if not gamemode.Get("zombiesurvival") then return end
 
-AddCSLuaFile()
-
 SWEP.Base = "weapon_zs_zombie"
 
-SWEP.MeleeReach = 50
-SWEP.MeleeDamage = 40
+SWEP.PrintName = "Claws"
+
+SWEP.MeleeReach = 65
+SWEP.MeleeDamage = 48
 SWEP.MeleeForceScale = 5
-SWEP.MeleeSize = 2.8
+SWEP.MeleeSize = 4.5
 SWEP.MeleeDamageType = DMG_SLASH
 SWEP.Primary.Delay = 1.5
 SWEP.Primary.Automatic = false
-SWEP.Secondary.Delay = 5
 
-AccessorFuncDT(SWEP, "AttackAnimTime", "Float", 3)
+SWEP.Secondary.Delay = 3
+SWEP.Secondary.Automatic = false
 
-function SWEP:CheckMoaning()
-	if self:IsMoaning() and self.Owner:Health() < self:GetMoanHealth() then
-		self:SetNextSecondaryFire(CurTime() + 1)
-		self:StopMoaning()
+AccessorFuncDT(SWEP, "AttackAnimTime", "Float", 2)
+
+function SWEP:Think()
+	self:CheckIdleAnimation()
+	self:CheckAttackAnimation()
+	--self:CheckMoaning()
+	self:CheckMeleeAttack()
+
+	local owner = self:GetOwner()
+	local traces = owner:CompensatedZombieMeleeTrace(26, 12, owner:WorldSpaceCenter(), dir)
+	local hit = false
+	for _, trace in ipairs(traces) do
+		if not self:IsMoaning() then continue end
+		if not trace.Hit then continue end
+		if trace.Entity.NextKnockdown and CurTime() < trace.Entity.NextKnockdown then continue end
+
+		if trace.HitWorld then
+			if trace.HitNormal.z < 0.8 then
+				hit = true
+			end
+		else
+			local ent = trace.Entity
+			if ent and ent:IsValid() and not ent:IsProjectile() then
+				hit = true
+				--ent:TakeSpecialDamage(15, DMG_GENERIC, owner, self)
+				if ent:IsPlayer() then
+					ent:ThrowFromPositionSetZ(trace.StartPos, 90 + owner:GetVelocity():Length() * 2)
+					if CurTime() >= (ent.NextKnockdown or 0) then
+						ent:KnockDown()
+						ent:EmitSound("player/pl_fallpain"..(math.random(2) == 1 and 3 or 1)..".wav")
+						ent.NextKnockdown = CurTime() + 5
+					end
+				end
+			end
+		end
 	end
 end
 
-function SWEP:Think()
-	self:CheckMeleeAttack()
-	--self:CheckMoaning()
+function SWEP:Move(mv)
 end
 
 function SWEP:ApplyMeleeDamage(ent, trace, damage)
-	if ent:IsValid() and ent:IsPlayer() then
-		local vel = ent:GetPos() - self.Owner:GetPos()
-		vel.z = 0
-		vel:Normalize()
-		vel = vel * 400
-		vel.z = 200
-
-		ent:KnockDown()
-		ent:SetGroundEntity(NULL)
-		ent:SetVelocity(vel)
-	end
-
 	self.BaseClass.ApplyMeleeDamage(self, ent, trace, damage)
 end
 
+function SWEP:StartSwinging()
+	if not IsFirstTimePredicted() then return end
+
+	local owner = self:GetOwner()
+	local armdelay = owner:GetMeleeSpeedMul()
+
+	self.MeleeAnimationMul = 1 / armdelay
+	if self.MeleeAnimationDelay then
+		self.NextAttackAnim = CurTime() + self.MeleeAnimationDelay * armdelay
+	else
+		self:SendAttackAnim()
+	end
+
+	self:DoSwingEvent()
+
+	self:PlayAttackSound()
+
+	--self:StopMoaning()
+
+	if self.FrozenWhileSwinging then
+		self:GetOwner():SetSpeed(1)
+	end
+
+	if self.MeleeDelay > 0 then
+		self:SetSwingEndTime(CurTime() + self.MeleeDelay * armdelay)
+
+		local trace = owner:CompensatedMeleeTrace(self.MeleeReach, self.MeleeSize)
+		if trace.HitNonWorld and not trace.Entity:IsPlayer() then
+			trace.IsPreHit = true
+			self.PreHit = trace
+		end
+
+		self.IdleAnimation = CurTime() + (self:SequenceDuration() + (self.MeleeAnimationDelay or 0)) * armdelay
+	else
+		self:Swung()
+	end
+end
+
+function SWEP:Initialize()
+	self.BaseClass.Initialize(self)
+end
+
+function SWEP:OnRemove()
+	self.BaseClass.OnRemove(self)
+end
+
 function SWEP:PrimaryAttack()
-	if not self.Owner:OnGround() then return end
+	--if not self:GetOwner():OnGround() then return end
+	if self:GetNextSecondaryFire() > CurTime() then return end
 
 	self.BaseClass.PrimaryAttack(self)
 
@@ -53,70 +117,38 @@ function SWEP:PrimaryAttack()
 	end
 end
 
-function SWEP:SecondaryAttack()
-	self.BaseClass.SecondaryAttack(self)
-end
-
-function SWEP:StartSwinging()
-	if self.MeleeAnimationDelay then
-		self.NextAttackAnim = CurTime() + self.MeleeAnimationDelay
-	else
-		self:SendAttackAnim()
-	end
-
-	local owner = self.Owner
-	owner:DoAttackEvent()
-
-	if SERVER then
-		self:PlayAttackSound()
-	end
-	--self:StopMoaning()
-
-	if self.FrozenWhileSwinging then
-		owner:SetSpeed(1)
-	end
-
-	if self.MeleeDelay > 0 then
-		self:SetSwingEndTime(CurTime() + self.MeleeDelay)
-
-		local trace = self.Owner:MeleeTrace(self.MeleeReach, self.MeleeSize, player.GetAll())
-		if trace.HitNonWorld then
-			trace.IsPreHit = true
-			self.PreHit = trace
+function SWEP:ApplyMeleeDamage(hitent, tr, damage)
+	self.BaseClass.ApplyMeleeDamage(self, hitent, tr, damage)
+	--print(hitent)
+	--print(hitent:IsPlayer())
+	if not hitent:IsPlayer() then
+		if hitent:GetClass() == "prop_door_rotating" then
+			hitent.Heal = 0
 		end
-
-		self.IdleAnimation = CurTime() + self:SequenceDuration()
-	else
-		self:Swung()
 	end
 end
 
 function SWEP:StopMoaning()
 	if not self:IsMoaning() then return end
 	self:SetMoaning(false)
-	self.Owner:ResetSpeed()
+
+	--self:StopMoaningSound()
+	self:GetOwner():ResetSpeed()
 end
 
 function SWEP:StartMoaning()
-	--if not self.Owner.m_Boss_Moan then return end
-	if self:IsMoaning() then return end
+	if self:IsMoaning() or IsValid(self:GetOwner().Revive) or IsValid(self:GetOwner().FeignDeath) then return end
 	self:SetMoaning(true)
-	
-	self.Owner:SetWalkSpeed( self.Owner:GetMaxSpeed() * 1.8 )
 
-	self:SetMoanHealth(self.Owner:Health())
+	--self:SetMoanHealth(self:GetOwner():Health())
+	self:GetOwner():SetWalkSpeed( self:GetOwner():GetZombieClassTable().RunSpeed )
+
+	--self:StartMoaningSound()
 end
 
-function SWEP:IsInAttackAnim()
-	return self:GetAttackAnimTime() > 0 and CurTime() < self:GetAttackAnimTime()
+function SWEP:IsMoaning()
+	return self:GetMoaning() or false
 end
-
-function SWEP:OnRemove()
-	if IsValid(self.Owner) then
-		self:StopMoaning()
-	end
-end
-SWEP.Holster = SWEP.OnRemove
 
 function SWEP:PlayAlertSound()
 	self.Owner:EmitSound("tank/voice/yell/tank_yell_0"..math.random(1, 9)..".wav", 77, 45)
@@ -131,27 +163,22 @@ function SWEP:PlayAttackSound()
 end
 
 function SWEP:PlayHitSound()
-	self.Owner:EmitSound("physics/body/body_medium_impact_hard"..math.random(6)..".wav", 77, math.random(60, 70))
+	self:EmitSound("physics/body/body_medium_impact_hard"..math.random(6)..".wav", 77, math.random(60, 70))
 end
 
 function SWEP:PlayMissSound()
 	self.Owner:EmitSound("npc/zombie/claw_miss"..math.random(2)..".wav", 77, math.random(60, 70))
-	
 end
 
-function SWEP:SetMoaning(moaning)
-	self:SetDTBool(0, moaning)
+function SWEP:IsInAttackAnim()
+	return self:GetAttackAnimTime() > 0 and CurTime() < self:GetAttackAnimTime()
 end
 
-function SWEP:GetMoaning()
-	return self:GetDTBool(0)
-end
-SWEP.IsMoaning = SWEP.GetMoaning
-
-function SWEP:SetMoanHealth(health)
-	self:SetDTInt(0, health)
+function SWEP:IsThrowingRockStart()
+	return self:GetThrowingRockStart() > 0 and CurTime() < self:GetThrowingRockStart()
 end
 
-function SWEP:GetMoanHealth()
-	return self:GetDTInt(0)
+function SWEP:SetupDataTables()
+	self:NetworkVar( "Bool", 5, "IsThrowing" )
+	self:NetworkVar( "Float", 5, "ThrowingRockStart" )
 end
