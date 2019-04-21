@@ -222,7 +222,7 @@ end
 if SERVER then
 	function CLASS:OnSpawned(pl)
 		--Neat little ambience that plays the Tank theme from L4D2.
-		--pl:CreateAmbience("tankambience")
+		pl:CreateAmbience("tankambience")
 		pl:SetBodygroup( 1, 0 )
 	end
 
