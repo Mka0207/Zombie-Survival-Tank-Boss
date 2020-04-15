@@ -1,5 +1,3 @@
-if not gamemode.Get("zombiesurvival") then return end
-
 SWEP.Base = "weapon_zs_zombie"
 
 SWEP.PrintName = "Claws"
@@ -20,9 +18,8 @@ AccessorFuncDT(SWEP, "AttackAnimTime", "Float", 2)
 function SWEP:Think()
 	self:CheckIdleAnimation()
 	self:CheckAttackAnimation()
-	--self:CheckMoaning()
 	self:CheckMeleeAttack()
-
+	
 	local owner = self:GetOwner()
 	local traces = owner:CompensatedZombieMeleeTrace(26, 12, owner:WorldSpaceCenter(), dir)
 	local hit = false
@@ -40,7 +37,7 @@ function SWEP:Think()
 			if ent and ent:IsValid() and not ent:IsProjectile() then
 				hit = true
 				--ent:TakeSpecialDamage(15, DMG_GENERIC, owner, self)
-				if ent:IsPlayer() then
+				if SERVER and ent:IsPlayer() then
 					ent:ThrowFromPositionSetZ(trace.StartPos, 90 + owner:GetVelocity():Length() * 2)
 					if CurTime() >= (ent.NextKnockdown or 0) then
 						ent:KnockDown()
